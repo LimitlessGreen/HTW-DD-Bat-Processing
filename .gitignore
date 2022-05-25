@@ -1,0 +1,12 @@
+
+BatClassify_Win64/
+
+.ipynb_checkpoints/
+
+__pycache__/
+
+.idea/
+
+*.xlsx#
+
+*.ods#
