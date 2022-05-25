@@ -200,7 +200,7 @@ class BatExcelController(ABC):
                 for row in range(worksheet.max_row + 1, 1, -1):
 
                     if row - 2 in self.ten_minute_intervals and row > 1:
-                        text = value.split(" ")
+                        text = value.split("_")
                         bat = text[0]
                         row_start = last_class_row - 1
                         row_end = row
