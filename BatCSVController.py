@@ -57,7 +57,7 @@ class BatCSVController(ABC):
         f.close()
 
         encoding = chardet.detect(data).get("encoding")
-        print(encoding)
+        #print(encoding)
         self.bat_csv = pd.read_csv(path, encoding=encoding)
         # rename to internal representation
         self.bat_csv.rename(columns=self.__csv_columns, inplace=True)
