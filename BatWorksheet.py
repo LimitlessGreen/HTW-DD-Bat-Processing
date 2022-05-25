@@ -20,7 +20,7 @@ import datetime
 
 
 class BatWorksheet(BatExcelController, BatCSVController):
-    def __init__(self, location, date, threshold_b=0.5, threshold_m=0.5, threshold_p=0.92, threshold_other=0.4):
+    def __init__(self, location, date, designer: BatDesigner, threshold_b=0.5, threshold_m=0.5, threshold_p=0.92, threshold_other=0.4):
         super().__init__()
         self.threshold_b = threshold_b  # default 0.5
         self.threshold_m = threshold_m  # default 0.5
@@ -45,7 +45,7 @@ class BatWorksheet(BatExcelController, BatCSVController):
 
         pd.options.mode.chained_assignment = None  # default='warn'
 
-        self.designer = BatDesigner()
+        self.designer = designer
 
     def _group_bats(self):
         header = self.bat_csv.columns.tolist()

@@ -61,7 +61,6 @@ class BatCSVController(ABC):
         self.bat_csv = pd.read_csv(path, encoding=encoding)
         # rename to internal representation
         self.bat_csv.rename(columns=self.__csv_columns, inplace=True)
-        print (self.bat_csv)
 
         # print(self.bat_csv.columns)
 

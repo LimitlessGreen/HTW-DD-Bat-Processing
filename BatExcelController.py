@@ -14,6 +14,8 @@ from openpyxl.formatting.rule import DataBarRule
 
 from abc import ABC
 
+from itertools import islice
+
 
 # Abstract
 class BatExcelController(ABC):
@@ -27,7 +29,8 @@ class BatExcelController(ABC):
         self.designer = BatDesigner()
 
     def __color_wheel(self):
-        colours = ["00ffefd4", "00fffeef", "00eff0ff"]
+        # colours = ["00ffefd4", "00fffeef", "00eff0ff"]
+        colours = self.designer.color_wheel_classes
         pick = colours[self.__color_index]
         self.__color_index = (self.__color_index + 1) % len(colours)
         return pick
@@ -40,23 +43,52 @@ class BatExcelController(ABC):
         worksheet = workbook.active
         table = worksheet.tables["Table1"]
 
+        """
         # iterate through header
         for i in range(1, worksheet.max_column):
             cell_obj = worksheet.cell(row=1, column=i)
             value = cell_obj.value
             if value in self.all_bats:
                 bat_columns[value] = cell_obj.coordinate
+        """
 
-        print(bat_columns)
+        data = worksheet.values
+        cols = next(data)[1:]
+        data = list(data)
+        idx = [r[0] for r in data]
+        data = (islice(r, 1, None) for r in data)
+        df = pd.DataFrame(data, index=idx, columns=cols)
 
-    def export_excel(self, output_file):
+        # rename to internal representation
+        df.rename(columns=self.designer.reversed_columns(), inplace=True)
+
+        # is it identical?
+        #diff_manual_id = min(df['manual_id'].isin(self.bat_csv['manual_id']).values)
+        #diff_reference_id = min(df['reference_id'].isin(self.bat_csv['reference_id']).values)
+        equal_datasets = min(df['file_name'].isin(self.bat_csv['file_name']).values)  # bool
+
+        if equal_datasets:
+            #self.bat_csv["manual_id"] = df["manual_id"].copy()
+            #self.bat_csv["reference_id"] = df["reference_id"].copy
+            print("Datasets are equal! Merging in new file")
+
+            # id column with matching content
+            id = 'file_name'
+            cols_to_replace = ['manual_id', 'reference_id']
+            self.bat_csv.loc[self.bat_csv[id].isin(df[id]), cols_to_replace] = df.loc[df[id].isin(self.bat_csv[id]), cols_to_replace].values
+
+            file = path.split("/")[-1]
+            file = file.split(".")[0]
+            self.export_excel(file, skip=True)
+
+    def export_excel(self, output_file, skip=False):
         # dataframe to spreadsheet
 
         # Skip, if file already exists
         save_path = f"{self.path}/{output_file}.xlsx"
-        if exists(save_path):
+        if not skip and exists(save_path):
             self.import_excel(path=save_path)
-            print("Saved nothing, file already exiting!")
+            print("File already exiting!")
             return
 
         # create a workbook and grab active worksheet
@@ -108,8 +140,8 @@ class BatExcelController(ABC):
                            start_value=0,
                            end_type='num',
                            end_value=1,
-                           # color=colors.BLUE
-                           color="638EC6")
+                           color=colors.BLUE)
+                           # color="638EC6")
 
         center_columns = ["file_name", "manual_id", "date", "time", "autofilled", "global_10_min_class"]
 
@@ -201,6 +233,14 @@ class BatExcelController(ABC):
                 if value == "manual_id":
                     col = worksheet.column_dimensions[get_column_letter(i)]
                     col.font = Font(bold=True)
+
+        # Finally, rewrite Header
+        for i in range(1, worksheet.max_column + 1):  # Header line
+            cell = worksheet.cell(row=1, column=i)
+            value = cell.value
+
+            cell.value = self.designer.get_column(value)
+
 
         # save workbook
         workbook.save(save_path)
