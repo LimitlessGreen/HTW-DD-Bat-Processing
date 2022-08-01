@@ -48,15 +48,28 @@ class BatWorksheet(BatExcelController, BatCSVController):
         self.designer = designer
 
     def _group_bats(self):
+        extra_bats = ["Pnat", "Nnoc", "Nlei", "Vmur", "Eser", "Enil", "NSL(unbestimmt)", "Hsav", "Mmyo", "Mdas"]
+        
+        
         header = self.bat_csv.columns.tolist()
+        
+        for item in extra_bats:
+            header.append(item)
+        
         bats_with_b = [x for x in header if x.startswith("B")]
         bats_with_m = [x for x in header if x.startswith("M")]
         bats_with_p = [x for x in header if x.startswith("P")]
         # workaround for "Pnat", which isn't in the original CSV
-        bats_with_p.append("Pnat")
+        #bats_with_p.append("Pnat")
         other_bats = [x for x in header if x not in header[0:4] + bats_with_b + bats_with_m + bats_with_p]
         self.all_bats = [x for x in header if x not in header[0:4]]
-        self.all_bats.append("Pnat")
+        #self.all_bats.append("Pnat")
+        
+        bats_with_b.sort()
+        bats_with_m.sort()
+        bats_with_p.sort()
+        self.all_bats.sort()
+        other_bats.sort()
         
         for bat in self.all_bats:
             if bat in bats_with_b:
