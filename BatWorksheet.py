@@ -48,9 +48,7 @@ class BatWorksheet(BatExcelController, BatCSVController):
         self.designer = designer
 
     def _group_bats(self):
-        extra_bats = ["Pnat", "Nnoc", "Nlei", "Vmur", "Eser", "Enil", "NSL(unbestimmt)", "Hsav", "Mmyo", "Mdas"]
-        
-        
+        extra_bats = self.designer.extra_bats       
         header = self.bat_csv.columns.tolist()
         
         for item in extra_bats:
@@ -59,12 +57,10 @@ class BatWorksheet(BatExcelController, BatCSVController):
         bats_with_b = [x for x in header if x.startswith("B")]
         bats_with_m = [x for x in header if x.startswith("M")]
         bats_with_p = [x for x in header if x.startswith("P")]
-        # workaround for "Pnat", which isn't in the original CSV
-        #bats_with_p.append("Pnat")
         other_bats = [x for x in header if x not in header[0:4] + bats_with_b + bats_with_m + bats_with_p]
         self.all_bats = [x for x in header if x not in header[0:4]]
-        #self.all_bats.append("Pnat")
         
+        # Sort alphabetically
         bats_with_b.sort()
         bats_with_m.sort()
         bats_with_p.sort()
@@ -190,7 +186,8 @@ class BatWorksheet(BatExcelController, BatCSVController):
         print("=== Autoanalysed Bats ===")
         for bat in self.bat_counter:
             percent = round((self.bat_counter[bat]/total)*100,2)
-            print(f"{bat}:\t{percent}%")
+            if percent > 0:
+                print(f"{bat}:\t{percent}%")
             
     def print_classification_progress(self):
         progress = len(self.bat_csv) - len(self.bat_csv[self.bat_csv['manual_id'] != ''])

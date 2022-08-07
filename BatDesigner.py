@@ -29,6 +29,10 @@ class BatDesigner(ABC):
             "*_class": "* Class"
         }
         self.color_wheel_classes = ["00ffefd4", "00fffeef", "00eff0ff"]
+        
+        self.extra_bats = list()
+        
+        self.single_file = False
 
     def reversed_columns(self) -> dict:
         values = list(self.columns.values())
@@ -61,3 +65,7 @@ class BatDesigner(ABC):
             return True
         else:
             return False
+        
+    def add_extra_bats(self, extra_bats:list):
+        for bat in extra_bats:
+            self.extra_bats.append(bat)

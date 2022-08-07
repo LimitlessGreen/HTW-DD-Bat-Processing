@@ -35,51 +35,59 @@ class BatExcelController(ABC):
         self.__color_index = (self.__color_index + 1) % len(colours)
         return pick
 
-    def import_excel(self, path):
+    def import_excel(self, path, one_file=False):
         workbook = load_workbook(path)
         bat_columns = dict()
         # Get workbook active sheet object
         # from the active attribute
-        worksheet = workbook.active
-        table = worksheet.tables["Table1"]
+        
+        if not one_file:
+            
+            worksheet = workbook.active
+            table = worksheet.tables["Table1"]
+            
+            """
+            # iterate through header
+            for i in range(1, worksheet.max_column):
+                cell_obj = worksheet.cell(row=1, column=i)
+                value = cell_obj.value
+                if value in self.all_bats:
+                    bat_columns[value] = cell_obj.coordinate
+            """
 
-        """
-        # iterate through header
-        for i in range(1, worksheet.max_column):
-            cell_obj = worksheet.cell(row=1, column=i)
-            value = cell_obj.value
-            if value in self.all_bats:
-                bat_columns[value] = cell_obj.coordinate
-        """
+            data = worksheet.values
+            cols = next(data)[1:]
+            data = list(data)
+            idx = [r[0] for r in data]
+            data = (islice(r, 1, None) for r in data)
+            df = pd.DataFrame(data, index=idx, columns=cols)
 
-        data = worksheet.values
-        cols = next(data)[1:]
-        data = list(data)
-        idx = [r[0] for r in data]
-        data = (islice(r, 1, None) for r in data)
-        df = pd.DataFrame(data, index=idx, columns=cols)
+            # rename to internal representation
+            df.rename(columns=self.designer.reversed_columns(), inplace=True)
 
-        # rename to internal representation
-        df.rename(columns=self.designer.reversed_columns(), inplace=True)
+            # is it identical?
+            #diff_manual_id = min(df['manual_id'].isin(self.bat_csv['manual_id']).values)
+            #diff_reference_id = min(df['reference_id'].isin(self.bat_csv['reference_id']).values)
+            equal_datasets = min(df['file_name'].isin(self.bat_csv['file_name']).values)  # bool
 
-        # is it identical?
-        #diff_manual_id = min(df['manual_id'].isin(self.bat_csv['manual_id']).values)
-        #diff_reference_id = min(df['reference_id'].isin(self.bat_csv['reference_id']).values)
-        equal_datasets = min(df['file_name'].isin(self.bat_csv['file_name']).values)  # bool
+            if equal_datasets:
+                #self.bat_csv["manual_id"] = df["manual_id"].copy()
+                #self.bat_csv["reference_id"] = df["reference_id"].copy
+                print("Datasets are equal! Merging in new file")
 
-        if equal_datasets:
-            #self.bat_csv["manual_id"] = df["manual_id"].copy()
-            #self.bat_csv["reference_id"] = df["reference_id"].copy
-            print("Datasets are equal! Merging in new file")
+                # id column with matching content
+                id = 'file_name'
+                cols_to_replace = ['manual_id', 'reference_id']
+                self.bat_csv.loc[self.bat_csv[id].isin(df[id]), cols_to_replace] = df.loc[df[id].isin(self.bat_csv[id]), cols_to_replace].values
 
-            # id column with matching content
-            id = 'file_name'
-            cols_to_replace = ['manual_id', 'reference_id']
-            self.bat_csv.loc[self.bat_csv[id].isin(df[id]), cols_to_replace] = df.loc[df[id].isin(self.bat_csv[id]), cols_to_replace].values
+                file = path.split("/")[-1]
+                file = file.split(".")[0]
+                self.export_excel(file, skip=True)
+            
+        else:
+            
 
-            file = path.split("/")[-1]
-            file = file.split(".")[0]
-            self.export_excel(file, skip=True)
+        
 
     def export_excel(self, output_file, skip=False):
         # dataframe to spreadsheet
@@ -204,7 +212,7 @@ class BatExcelController(ABC):
                         bat = text[0]
                         row_start = last_class_row - 1
                         row_end = row
-                        value_range = f"{letter_manual_id}{row_start}:{letter_manual_id}{row}"
+                        value_range = f"${letter_manual_id}${row_start}:${letter_manual_id}${row}"
                         last_class_row = row
                         cell = worksheet.cell(row=row, column=i)
                         cell.value = f'=IF(COUNTIF({value_range}, "*{bat}*"), 1, "")'
